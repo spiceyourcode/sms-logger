@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-PESA Transaction Logger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #00c851 0%, #007e33 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .input-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .input-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .message-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+            transition: border-color 0.3s ease;
+            resize: vertical;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            border-color: #00c851;
+            box-shadow: 0 0 10px rgba(0, 200, 81, 0.1);
+        }
+        
+        .process-btn {
+            background: linear-gradient(135deg, #00c851 0%, #007e33 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+        
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 200, 81, 0.3);
+        }
+        
+        .results-section {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .results-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .results-header h3 {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .transaction-item {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.3s ease;
+        }
+        
+        .transaction-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+        
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .transaction-code {
+            font-family: monospace;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .transaction-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #00c851;
+        }
+        
+        .transaction-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .detail-value {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            opacity: 0.9;
+        }
+        
+        .sample-message {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                margin: 0;
+                border-radius: 10px;
+            }
+
+            .main-content {
+                padding: 15px;
+            }
+
+            .header {
+                padding: 20px 15px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .header p {
+                font-size: 1em;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+
+            .stat-number {
+                font-size: 1.5em;
+            }
+
+            .input-section {
+                padding: 20px;
+            }
+
+            .message-input {
+                min-height: 100px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+
+            .process-btn {
+                width: 100%;
+                padding: 15px;
+                font-size: 16px;
+                margin-top: 15px;
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .process-btn + .process-btn {
+                margin-top: 10px;
+            }
+
+            .results-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .results-header h3 {
+                margin-bottom: 0;
+            }
+
+            .transaction-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .transaction-amount {
+                font-size: 1.1em;
+            }
+
+            .transaction-details {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .detail-item {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .detail-label {
+                font-size: 11px;
+                min-width: 80px;
+            }
+
+            .detail-value {
+                font-size: 13px;
+                text-align: right;
+            }
+
+            .sample-message {
+                font-size: 11px;
+            }
+
+            .sample-message ul {
+                margin: 8px 0 0 15px;
+            }
+
+            .sample-message li {
+                margin-bottom: 5px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-number {
+                font-size: 1.3em;
+            }
+
+            .input-section {
+                padding: 15px;
+            }
+
+            .message-input {
+                min-height: 80px;
+            }
+
+            .process-btn {
+                padding: 12px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💳 M-PESA Transaction Logger</h1>
+            <p>Real-time SMS transaction processing and Excel logging</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalTransactions">0</div>
+                    <div class="stat-label">Total Transactions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="todayTransactions">0</div>
+                    <div class="stat-label">Today's Transactions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalAmount">KSh 0</div>
+                    <div class="stat-label">Total Amount</div>
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <h3>📱 Process M-PESA Message</h3>
+                <textarea 
+                    id="messageInput" 
+                    class="message-input" 
+                    placeholder="Paste your M-PESA transaction message here..."
+                ></textarea>
+                <button class="process-btn" onclick="processMessage()">
+                    🔄 Process Transaction
+                </button>
+                <button class="process-btn" onclick="loadSamples()" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); margin-left: 10px;">
+                    📝 Load Samples
+                </button>
+                <div class="sample-message">
+                    <strong>Sample message:</strong> THK04TF1W4 Confirmed. Ksh250.00 sent to Antony Kiumbe on 20/8/25 at 10:15 AM. New M-PESA balance is Ksh93.09. Transaction cost, Ksh7.00.
+                    <br><br>
+                    <strong>💡 Quick Tips:</strong>
+                    <ul style="margin: 10px 0 0 20px; color: #856404;">
+                        <li>Paste any M-PESA SMS message in the text area above</li>
+                        <li>Use Ctrl+Enter to quickly process messages</li>
+                        <li>Click "Load Samples" to see demo transactions</li>
+                        <li>Search transactions using the search box</li>
+                        <li>Export your data as CSV for Excel analysis</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div id="statusMessage" class="status-message"></div>
+            
+            <div class="results-section">
+                <div class="results-header">
+                    <h3>📊 Processed Transactions</h3>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="searchInput" placeholder="Search transactions..." style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        <button class="process-btn" onclick="exportCSV()" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); padding: 8px 15px; font-size: 14px;">
+                            📥 Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div id="transactionsList">
+                    <div style="padding: 40px; text-align: center; color: #666;">
+                        No transactions processed yet. Enter a message above to get started.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store transactions in memory (in a real app, this would sync with your Excel file)
+        let transactions = [];
+        let totalAmount = 0;
+        
+        function parseTransaction(message) {
+            const transaction = {};
+            
+            // Extract transaction code
+            const codeMatch = message.match(/^([A-Z0-9]{10})/);
+            transaction.code = codeMatch ? codeMatch[1] : 'N/A';
+            
+            // Extract amount
+            const amountMatch = message.match(/Ksh([\d,]+\.?\d*)/);
+            transaction.amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0;
+            
+            // Extract transaction type and recipient
+            if (message.toLowerCase().includes('sent to')) {
+                transaction.type = 'Send Money';
+                const recipientMatch = message.match(/sent to ([^on]+)/i);
+                transaction.recipient = recipientMatch ? recipientMatch[1].trim() : 'N/A';
+            } else if (message.toLowerCase().includes('received from')) {
+                transaction.type = 'Receive Money';
+                const senderMatch = message.match(/received from ([^on]+)/i);
+                transaction.recipient = senderMatch ? senderMatch[1].trim() : 'N/A';
+            } else if (message.toLowerCase().includes('paid to')) {
+                transaction.type = 'Pay Bill/Buy Goods';
+                const merchantMatch = message.match(/paid to ([^\.]+)/i);
+                transaction.recipient = merchantMatch ? merchantMatch[1].trim() : 'N/A';
+            } else if (message.toLowerCase().includes('withdrawn')) {
+                transaction.type = 'Withdraw';
+                transaction.recipient = 'ATM/Agent';
+            } else {
+                transaction.type = 'Other';
+                transaction.recipient = 'N/A';
+            }
+            
+            // Extract date and time
+            const dateTimeMatch = message.match(/on (\d{1,2}\/\d{1,2}\/\d{2,4}) at (\d{1,2}:\d{2} [AP]M)/);
+            if (dateTimeMatch) {
+                transaction.date = dateTimeMatch[1];
+                transaction.time = dateTimeMatch[2];
+            } else {
+                transaction.date = 'N/A';
+                transaction.time = 'N/A';
+            }
+            
+            // Extract new balance
+            const balanceMatch = message.match(/New M-PESA balance is Ksh([\d,]+\.?\d*)/);
+            transaction.balance = balanceMatch ? parseFloat(balanceMatch[1].replace(/,/g, '')) : 0;
+            
+            // Extract transaction cost
+            const costMatch = message.match(/Transaction cost[,.]? Ksh([\d,]+\.?\d*)/);
+            transaction.cost = costMatch ? parseFloat(costMatch[1].replace(/,/g, '')) : 0;
+            
+            // Store raw message and processing time
+            transaction.rawMessage = message;
+            transaction.processedTime = new Date().toLocaleString();
+            
+            return transaction;
+        }
+        
+        function processMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                showStatus('Please enter a message to process', 'error');
+                return;
+            }
+            
+            try {
+                const transaction = parseTransaction(message);
+                transactions.unshift(transaction);
+                totalAmount += transaction.amount;
+                
+                updateStats();
+                displayTransactions();
+                
+                showStatus(`✅ Transaction ${transaction.code} processed successfully!`, 'success');
+                messageInput.value = '';
+                
+            } catch (error) {
+                showStatus('❌ Error processing message: ' + error.message, 'error');
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('totalTransactions').textContent = transactions.length;
+            
+            // Count today's transactions
+            const today = new Date().toDateString();
+            const todayCount = transactions.filter(t => {
+                const processedDate = new Date(t.processedTime).toDateString();
+                return processedDate === today;
+            }).length;
+            document.getElementById('todayTransactions').textContent = todayCount;
+            
+            document.getElementById('totalAmount').textContent = `KSh ${totalAmount.toLocaleString()}`;
+        }
+        
+        function displayTransactions() {
+            const container = document.getElementById('transactionsList');
+
+            if (transactions.length === 0) {
+                container.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No transactions processed yet. Enter a message above to get started.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            transactions.forEach((transaction, index) => {
+                const transactionDiv = document.createElement('div');
+                transactionDiv.className = 'transaction-item';
+
+                transactionDiv.innerHTML = `
+                    <div class="transaction-header">
+                        <span class="transaction-code">${transaction.code}</span>
+                        <span class="transaction-amount">KSh ${transaction.amount.toLocaleString()}</span>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Type</span>
+                            <span class="detail-value">${transaction.type}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Recipient</span>
+                            <span class="detail-value">${transaction.recipient}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Date</span>
+                            <span class="detail-value">${transaction.date}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Time</span>
+                            <span class="detail-value">${transaction.time}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Balance</span>
+                            <span class="detail-value">KSh ${transaction.balance.toLocaleString()}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Cost</span>
+                            <span class="detail-value">KSh ${transaction.cost.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(transactionDiv);
+            });
+        }
+
+        function loadSamples() {
+            const sampleMessages = [
+                "THK04TF1W4 Confirmed. Ksh250.00 sent to Antony Kiumbe on 20/8/25 at 10:15 AM. New M-PESA balance is Ksh93.09. Transaction cost, Ksh7.00.",
+                "ABC123XYZ7 Confirmed. Ksh500.00 received from John Doe on 21/8/25 at 2:30 PM. New M-PESA balance is Ksh593.09. Transaction cost, Ksh0.00.",
+                "DEF456GHI8 Confirmed. Ksh100.00 paid to KPLC PREPAID on 21/8/25 at 3:45 PM. New M-PESA balance is Ksh493.09. Transaction cost, Ksh0.00.",
+                "GHI789JKL9 Confirmed. Ksh200.00 withdrawn from Agent on 22/8/25 at 11:20 AM. New M-PESA balance is Ksh293.09. Transaction cost, Ksh33.00."
+            ];
+
+            sampleMessages.forEach(message => {
+                const transaction = parseTransaction(message);
+                transactions.unshift(transaction);
+                totalAmount += transaction.amount;
+            });
+
+            updateStats();
+            displayTransactions();
+            showStatus(`✅ Loaded ${sampleMessages.length} sample transactions!`, 'success');
+        }
+
+        function searchTransactions() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('transactionsList');
+
+            if (!searchTerm) {
+                displayTransactions();
+                return;
+            }
+
+            const filteredTransactions = transactions.filter(transaction =>
+                transaction.code.toLowerCase().includes(searchTerm) ||
+                transaction.type.toLowerCase().includes(searchTerm) ||
+                transaction.recipient.toLowerCase().includes(searchTerm) ||
+                transaction.rawMessage.toLowerCase().includes(searchTerm)
+            );
+
+            if (filteredTransactions.length === 0) {
+                container.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No transactions match your search.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            filteredTransactions.forEach((transaction, index) => {
+                const transactionDiv = document.createElement('div');
+                transactionDiv.className = 'transaction-item';
+
+                transactionDiv.innerHTML = `
+                    <div class="transaction-header">
+                        <span class="transaction-code">${transaction.code}</span>
+                        <span class="transaction-amount">KSh ${transaction.amount.toLocaleString()}</span>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Type</span>
+                            <span class="detail-value">${transaction.type}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Recipient</span>
+                            <span class="detail-value">${transaction.recipient}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Date</span>
+                            <span class="detail-value">${transaction.date}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Time</span>
+                            <span class="detail-value">${transaction.time}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Balance</span>
+                            <span class="detail-value">KSh ${transaction.balance.toLocaleString()}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Cost</span>
+                            <span class="detail-value">KSh ${transaction.cost.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(transactionDiv);
+            });
+        }
+
+        function exportCSV() {
+            if (transactions.length === 0) {
+                showStatus('❌ No transactions to export', 'error');
+                return;
+            }
+
+            const headers = ['Transaction Code', 'Amount (KSh)', 'Type', 'Recipient', 'Date', 'Time', 'Balance (KSh)', 'Cost (KSh)', 'Raw Message'];
+            const csvContent = [
+                headers.join(','),
+                ...transactions.map(t => [
+                    t.code,
+                    t.amount,
+                    t.type,
+                    `"${t.recipient}"`,
+                    t.date,
+                    t.time,
+                    t.balance,
+                    t.cost,
+                    `"${t.rawMessage.replace(/"/g, '""')}"`
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `mpesa_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showStatus('✅ Transactions exported to CSV successfully!', 'success');
+        }
+
+        // Add event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const messageInput = document.getElementById('messageInput');
+
+            // Search on input change
+            searchInput.addEventListener('input', searchTransactions);
+
+            // Keyboard shortcut Ctrl+Enter to process message
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    processMessage();
+                }
+            });
+        });
