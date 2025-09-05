@@ -4,8 +4,7 @@
 #cache file 
 __pycache__
 
-#adb script tester 
-adb_test_script.py 
+
 
 #dummy messages 
 sms_messages.txt
