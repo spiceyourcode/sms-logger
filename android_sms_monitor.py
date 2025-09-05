@@ -30,17 +30,30 @@ class AndroidSMSMonitor:
                 # Get SMS messages (this is a placeholder - actual implementation depends on device)
                 # You may need to use: adb shell content query --uri content://sms/inbox
                 result = subprocess.run([
-                    'adb', 'shell', 'content', 'query', 
-                    '--uri', 'content://sms/inbox', 
+                    'adb', 'shell', 'content', 'query',
+                    '--uri', 'content://sms/inbox',
                     '--projection', 'address,body,date',
                     '--where', 'read=0'
-                ], capture_output=True, text=True)
-                
+                ], capture_output=True, text=False)
+
                 if result.returncode == 0 and result.stdout:
+                    # Decode the output to handle encoding issues
+                    stdout = result.stdout.decode('utf-8', errors='replace')
                     # Parse the output and look for new M-PESA messages
-                    # This would require parsing the ADB output format
                     print("📨 New SMS detected, checking for M-PESA...")
-                    # Process M-PESA messages here
+                    print(f"ADB Output: {stdout[:200]}...")  # Debug: show first 200 chars
+
+                    # Parse ADB output to extract SMS body
+                    body_match = re.search(r'body=(.+)', stdout)
+                    if body_match:
+                        body = body_match.group(1).strip()
+                        if self.is_mpesa_message(body):
+                            print("🆕 M-PESA message found, processing...")
+                            self.logger.process_message(body)
+                        else:
+                            print("📨 SMS detected but not M-PESA")
+                    else:
+                        print("❌ Could not extract SMS body from ADB output")
                 
                 time.sleep(10)  # Check every 10 seconds
                 
