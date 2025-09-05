@@ -102,6 +102,12 @@ class MPESATransactionLogger:
             # Load existing workbook
             wb = openpyxl.load_workbook(self.excel_file)
             ws = wb.active
+
+            # Check for duplicate transaction code
+            for row in ws.iter_rows(min_row=2, max_col=1, values_only=True):
+                if row[0] == transaction_data['transaction_code']:
+                    print(f"⚠️ Duplicate transaction code {transaction_data['transaction_code']} found. Skipping entry.")
+                    return
             
             # Find the next empty row
             next_row = ws.max_row + 1
@@ -131,6 +137,126 @@ class MPESATransactionLogger:
             
         except Exception as e:
             print(f"❌ Error adding transaction to Excel: {str(e)}")
+
+    def parse_mpesa_message(self, message):
+        """Parse M-PESA transaction message and extract key information"""
+        data = {}
+        
+        # Extract transaction code (usually at the beginning)
+        code_match = re.search(r'^([A-Z0-9]{10})', message)
+        data['transaction_code'] = code_match.group(1) if code_match else "N/A"
+        
+        # Extract amount
+        amount_match = re.search(r'Ksh([\d,]+\.?\d*)', message)
+        data['amount'] = amount_match.group(1).replace(',', '') if amount_match else "0"
+        
+        # Determine transaction type and recipient/sender
+        if 'sent to' in message.lower():
+            data['transaction_type'] = 'Send Money'
+            recipient_match = re.search(r'sent to ([^on]+)', message, re.IGNORECASE)
+            data['recipient_sender'] = recipient_match.group(1).strip() if recipient_match else "N/A"
+        elif 'received from' in message.lower():
+            data['transaction_type'] = 'Receive Money'
+            sender_match = re.search(r'received from ([^on]+)', message, re.IGNORECASE)
+            data['recipient_sender'] = sender_match.group(1).strip() if sender_match else "N/A"
+        elif 'paid to' in message.lower():
+            data['transaction_type'] = 'Pay Bill/Buy Goods'
+            merchant_match = re.search(r'paid to ([^\.]+)', message, re.IGNORECASE)
+            data['recipient_sender'] = merchant_match.group(1).strip() if merchant_match else "N/A"
+        elif 'withdrawn' in message.lower():
+            data['transaction_type'] = 'Withdraw'
+            data['recipient_sender'] = 'ATM/Agent'
+        else:
+            data['transaction_type'] = 'Other'
+            data['recipient_sender'] = 'N/A'
+        
+        # Extract date and time
+        date_time_match = re.search(r'on (\d{1,2}/\d{1,2}/\d{2,4}) at (\d{1,2}:\d{2} [AP]M)', message)
+        if date_time_match:
+            data['date'] = date_time_match.group(1)
+            data['time'] = date_time_match.group(2)
+        else:
+            data['date'] = "N/A"
+            data['time'] = "N/A"
+        
+        # Extract new balance
+        balance_match = re.search(r'New M-PESA balance is Ksh([\d,]+\.?\d*)', message)
+        data['new_balance'] = balance_match.group(1).replace(',', '') if balance_match else "N/A"
+        
+        # Extract transaction cost
+        cost_match = re.search(r'Transaction cost[,.]? Ksh([\d,]+\.?\d*)', message)
+        data['transaction_cost'] = cost_match.group(1).replace(',', '') if cost_match else "0"
+        
+        # Extract daily limit remaining
+        limit_match = re.search(r'Amount you can transact within the day is ([\d,]+\.?\d*)', message)
+        data['daily_limit_remaining'] = limit_match.group(1).replace(',', '') if limit_match else "N/A"
+        
+        # Store raw message and processing time
+        data['raw_message'] = message
+        data['processed_datetime'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        return data
+
+    def parse_mpesa_message(self, message):
+        """Parse M-PESA transaction message and extract key information"""
+        data = {}
+
+        # Extract transaction code (usually at the beginning)
+        code_match = re.search(r'^([A-Z0-9]{10})', message)
+        data['transaction_code'] = code_match.group(1) if code_match else "N/A"
+
+        # Extract amount
+        amount_match = re.search(r'Ksh([\d,]+\.?\d*)', message)
+        data['amount'] = amount_match.group(1).replace(',', '') if amount_match else "0"
+
+        # Determine transaction type and recipient/sender
+        lower_msg = message.lower()
+        if 'sent to' in lower_msg:
+            data['transaction_type'] = 'Send Money'
+            # Improved regex to capture recipient name until 'on' or end of sentence
+            recipient_match = re.search(r'sent to (.+?)(?: on |\.|$)', message, re.IGNORECASE)
+            data['recipient_sender'] = recipient_match.group(1).strip() if recipient_match else "N/A"
+        elif 'received from' in lower_msg:
+            data['transaction_type'] = 'Receive Money'
+            sender_match = re.search(r'received from (.+?)(?: on |\.|$)', message, re.IGNORECASE)
+            data['recipient_sender'] = sender_match.group(1).strip() if sender_match else "N/A"
+        elif 'paid to' in lower_msg:
+            data['transaction_type'] = 'Pay Bill/Buy Goods'
+            merchant_match = re.search(r'paid to (.+?)(?: on |\.|$)', message, re.IGNORECASE)
+            data['recipient_sender'] = merchant_match.group(1).strip() if merchant_match else "N/A"
+        elif 'withdrawn' in lower_msg:
+            data['transaction_type'] = 'Withdraw'
+            data['recipient_sender'] = 'ATM/Agent'
+        else:
+            data['transaction_type'] = 'Other'
+            data['recipient_sender'] = 'N/A'
+
+        # Extract date and time
+        date_time_match = re.search(r'on (\d{1,2}/\d{1,2}/\d{2,4}) at (\d{1,2}:\d{2} [AP]M)', message)
+        if date_time_match:
+            data['date'] = date_time_match.group(1)
+            data['time'] = date_time_match.group(2)
+        else:
+            data['date'] = "N/A"
+            data['time'] = "N/A"
+
+        # Extract new balance
+        balance_match = re.search(r'New M-PESA balance is Ksh([\d,]+\.?\d*)', message)
+        data['new_balance'] = balance_match.group(1).replace(',', '') if balance_match else "N/A"
+
+        # Extract transaction cost
+        cost_match = re.search(r'Transaction cost[,.]? Ksh([\d,]+\.?\d*)', message)
+        data['transaction_cost'] = cost_match.group(1).replace(',', '') if cost_match else "0"
+
+        # Extract daily limit remaining
+        limit_match = re.search(r'Amount you can transact within the day is ([\d,]+\.?\d*)', message)
+        data['daily_limit_remaining'] = limit_match.group(1).replace(',', '') if limit_match else "N/A"
+
+        # Store raw message and processing time
+        data['raw_message'] = message
+        data['processed_datetime'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        return data
     
     def process_message(self, message):
         """Main method to process a single M-PESA message"""
