@@ -6,7 +6,6 @@ import time
 import re
 from mpesa_logger import MPESATransactionLogger  # Import our main logger
 
-
 class AndroidSMSMonitor:
     def __init__(self, excel_file="mpesa_transactions.xlsx"):
         self.logger = MPESATransactionLogger(excel_file)
