@@ -158,7 +158,7 @@ def main():
     print("\n" + "=" * 60)
     print("📋 SETUP SUMMARY:")
     print("=" * 60)
-    print("✅ ADB: Working")
+    print("✅ ADB: Working Properly")
     print("✅ Device: Connected")
     print(f"{'✅' if sms_works else '⚠️ '} SMS Access: {'Working' if sms_works else 'Limited'}")
     
